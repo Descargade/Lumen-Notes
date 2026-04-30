@@ -1,0 +1,31 @@
+kind = "web"
+previewPath = "/"
+title = "Lumen Notes"
+version = "1.0.0"
+id = "artifacts/lumen-notes"
+router = "path"
+
+[[integratedSkills]]
+name = "react-vite"
+version = "1.0.0"
+
+[[services]]
+name = "web"
+paths = [ "/" ]
+localPort = 21628
+
+[services.development]
+run = "pnpm --filter @workspace/lumen-notes run dev"
+
+[services.production]
+build = [ "pnpm", "--filter", "@workspace/lumen-notes", "run", "build" ]
+publicDir = "artifacts/lumen-notes/dist/public"
+serve = "static"
+
+[[services.production.rewrites]]
+from = "/*"
+to = "/index.html"
+
+[services.env]
+PORT = "21628"
+BASE_PATH = "/"
