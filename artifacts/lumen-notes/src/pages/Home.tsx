@@ -21,6 +21,9 @@ export default function Home() {
     togglePin,
     deleteAllNotes,
     importNotes,
+    allTags,
+    selectedTag,
+    setSelectedTag,
   } = useNotes();
 
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
@@ -40,10 +43,8 @@ export default function Home() {
           handleCreateNote();
         } else if (e.key === "f") {
           e.preventDefault();
-          const searchInput = document.querySelector('input[placeholder="Buscar notas..."]') as HTMLInputElement;
-          if (searchInput) {
-            searchInput.focus();
-          }
+          const searchInput = document.querySelector('input[data-testid="input-search"]') as HTMLInputElement;
+          if (searchInput) searchInput.focus();
         } else if (e.key === ",") {
           e.preventDefault();
           setIsSettingsOpen(true);
@@ -82,10 +83,13 @@ export default function Home() {
             onTogglePin={togglePin}
             onOpenSettings={() => setIsSettingsOpen(true)}
             isMobile={isMobile}
+            allTags={allTags}
+            selectedTag={selectedTag}
+            setSelectedTag={setSelectedTag}
           />
         </div>
       )}
-      
+
       {(!isMobile || showEditor) && (
         <div className="flex-1 h-full overflow-hidden relative">
           <NoteEditor
@@ -93,6 +97,7 @@ export default function Home() {
             updateNote={updateNote}
             onBack={() => setActiveNoteId(null)}
             isMobile={isMobile}
+            allTags={allTags}
           />
         </div>
       )}
@@ -102,7 +107,7 @@ export default function Home() {
       </div>
 
       <KeyboardShortcuts />
-      
+
       <SettingsPanel
         isOpen={isSettingsOpen}
         onClose={() => setIsSettingsOpen(false)}
