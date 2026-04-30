@@ -1,15 +1,23 @@
 {
+  "id": "lumen-notes-app",
   "name": "Lumen Notes",
   "short_name": "Lumen",
+  "description": "Bloc de notas minimalista con modo oscuro, búsqueda inteligente y guardado automático.",
+  "lang": "es",
   "display": "standalone",
+  "display_override": ["standalone", "minimal-ui"],
+  "orientation": "portrait",
   "theme_color": "#0d0d14",
   "background_color": "#0d0d14",
   "start_url": "/",
+  "scope": "/",
+  "categories": ["productivity", "utilities"],
   "icons": [
     {
       "src": "/icons/icon.svg",
       "sizes": "any",
-      "type": "image/svg+xml"
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
     }
   ]
 }

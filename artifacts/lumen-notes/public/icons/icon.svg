@@ -1,4 +1,29 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512">
-  <rect width="512" height="512" fill="#0d0d14"/>
-  <text x="50%" y="50%" dominant-baseline="middle" text-anchor="middle" font-family="sans-serif" font-size="200" font-weight="bold" fill="#f5a623">LN</text>
+  <defs>
+    <radialGradient id="glow" cx="38%" cy="30%" r="55%">
+      <stop offset="0%" stop-color="#f5a623" stop-opacity="0.18"/>
+      <stop offset="100%" stop-color="#0d0d14" stop-opacity="0"/>
+    </radialGradient>
+    <linearGradient id="mark" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" stop-color="#ffc14d"/>
+      <stop offset="100%" stop-color="#e08800"/>
+    </linearGradient>
+  </defs>
+
+  <!-- Background -->
+  <rect width="512" height="512" rx="110" fill="#0d0d14"/>
+
+  <!-- Subtle ambient glow -->
+  <rect width="512" height="512" rx="110" fill="url(#glow)"/>
+
+  <!-- Geometric L mark — two clean rectangles forming an L -->
+  <!-- Vertical stroke -->
+  <rect x="148" y="124" width="78" height="284" rx="14" fill="url(#mark)"/>
+  <!-- Horizontal stroke -->
+  <rect x="148" y="332" width="216" height="76" rx="14" fill="url(#mark)"/>
+
+  <!-- Accent spark — small bright circle top-right of the mark, like a light source -->
+  <circle cx="376" cy="148" r="22" fill="#f5a623" opacity="0.15"/>
+  <circle cx="376" cy="148" r="12" fill="#f5a623" opacity="0.5"/>
+  <circle cx="376" cy="148" r="6" fill="#ffd280"/>
 </svg>
