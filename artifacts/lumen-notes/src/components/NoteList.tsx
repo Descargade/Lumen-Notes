@@ -254,6 +254,12 @@ export function NoteList({
           </AnimatePresence>
         )}
       </div>
+
+      <div className="px-4 py-2.5 border-t border-border/40 flex items-center justify-end">
+        <span className="text-[10px] font-medium tracking-widest text-muted-foreground/30 select-none uppercase">
+          2BleA
+        </span>
+      </div>
     </div>
   );
 }
