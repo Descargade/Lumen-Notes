@@ -34,6 +34,7 @@ export function KeyboardShortcuts() {
     { keys: ["Ctrl", "N"], desc: "Nueva nota" },
     { keys: ["Ctrl", "F"], desc: "Buscar" },
     { keys: ["Ctrl", ","], desc: "Configuración" },
+    { keys: ["Ctrl", "L"], desc: "Bloquear notas privadas" },
     { keys: ["Del", "Bksp"], desc: "Eliminar nota (en lista)" },
     { keys: ["Esc"], desc: "Cerrar / Cancelar" },
     { keys: ["?"], desc: "Atajos de teclado" },

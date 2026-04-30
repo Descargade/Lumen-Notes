@@ -1,15 +1,19 @@
 import { useState, useEffect, useCallback, useMemo } from "react";
 import { Note, loadNotes, saveNotes, createNote } from "./notes";
 import { searchNotes } from "./search";
+import { isPinEnabled, verifyPin } from "./pin";
 
 export function useNotes() {
   const [notes, setNotes] = useState<Note[]>([]);
   const [searchQuery, setSearchQuery] = useState("");
   const [activeNoteId, setActiveNoteId] = useState<string | null>(null);
   const [selectedTag, setSelectedTag] = useState<string | null>(null);
+  const [isUnlocked, setIsUnlocked] = useState(false);
+  const [pendingNoteId, setPendingNoteId] = useState<string | null>(null);
 
   useEffect(() => {
     setNotes(loadNotes());
+    setIsUnlocked(!isPinEnabled());
   }, []);
 
   useEffect(() => {
@@ -33,15 +37,21 @@ export function useNotes() {
 
   const deleteNote = useCallback((id: string) => {
     setNotes((prev) => prev.filter((note) => note.id !== id));
-    if (activeNoteId === id) {
-      setActiveNoteId(null);
-    }
+    if (activeNoteId === id) setActiveNoteId(null);
   }, [activeNoteId]);
 
   const togglePin = useCallback((id: string) => {
     setNotes((prev) =>
       prev.map((note) =>
         note.id === id ? { ...note, pinned: !note.pinned } : note
+      )
+    );
+  }, []);
+
+  const togglePrivate = useCallback((id: string) => {
+    setNotes((prev) =>
+      prev.map((note) =>
+        note.id === id ? { ...note, private: !note.private } : note
       )
     );
   }, []);
@@ -59,13 +69,48 @@ export function useNotes() {
     });
   }, []);
 
+  const tryOpenNote = useCallback((id: string) => {
+    const note = notes.find(n => n.id === id);
+    if (note?.private && isPinEnabled() && !isUnlocked) {
+      setPendingNoteId(id);
+    } else {
+      setActiveNoteId(id);
+    }
+  }, [notes, isUnlocked]);
+
+  const unlockWithPin = useCallback((pin: string): boolean => {
+    if (verifyPin(pin)) {
+      setIsUnlocked(true);
+      if (pendingNoteId) {
+        setActiveNoteId(pendingNoteId);
+        setPendingNoteId(null);
+      }
+      return true;
+    }
+    return false;
+  }, [pendingNoteId]);
+
+  const lock = useCallback(() => {
+    if (isPinEnabled()) {
+      setIsUnlocked(false);
+      const currentNote = notes.find(n => n.id === activeNoteId);
+      if (currentNote?.private) setActiveNoteId(null);
+    }
+  }, [notes, activeNoteId]);
+
+  const onPinEnabled = useCallback(() => {
+    setIsUnlocked(false);
+  }, []);
+
+  const onPinDisabled = useCallback(() => {
+    setIsUnlocked(true);
+  }, []);
+
   const allTags = useMemo(() => {
     const tagCount = new Map<string, number>();
     for (const note of notes) {
       for (const tag of note.tags ?? []) {
-        if (tag.trim()) {
-          tagCount.set(tag, (tagCount.get(tag) ?? 0) + 1);
-        }
+        if (tag.trim()) tagCount.set(tag, (tagCount.get(tag) ?? 0) + 1);
       }
     }
     return Array.from(tagCount.entries())
@@ -86,6 +131,7 @@ export function useNotes() {
   }, [notes, searchQuery, selectedTag]);
 
   const activeNote = notes.find((n) => n.id === activeNoteId) || null;
+  const hasPrivateNotes = notes.some(n => n.private);
 
   return {
     notes,
@@ -99,10 +145,20 @@ export function useNotes() {
     updateNote,
     deleteNote,
     togglePin,
+    togglePrivate,
     deleteAllNotes,
     importNotes,
     allTags,
     selectedTag,
     setSelectedTag,
+    isUnlocked,
+    pendingNoteId,
+    setPendingNoteId,
+    tryOpenNote,
+    unlockWithPin,
+    lock,
+    hasPrivateNotes,
+    onPinEnabled,
+    onPinDisabled,
   };
 }

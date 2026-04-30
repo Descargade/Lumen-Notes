@@ -1,11 +1,12 @@
 import { useRef } from "react";
 import { formatDistanceToNow } from "date-fns";
 import { es } from "date-fns/locale";
-import { Search, Plus, Pin, Trash2, Settings, FileText, Tag, X } from "lucide-react";
+import { Search, Plus, Pin, Trash2, Settings, FileText, Tag, X, Lock, LockOpen } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { Note } from "@/lib/notes";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { isPinEnabled } from "@/lib/pin";
 
 interface TagInfo {
   tag: string;
@@ -17,7 +18,7 @@ interface NoteListProps {
   searchQuery: string;
   setSearchQuery: (q: string) => void;
   activeNoteId: string | null;
-  setActiveNoteId: (id: string | null) => void;
+  tryOpenNote: (id: string) => void;
   onCreateNote: () => void;
   onDeleteNote: (id: string) => void;
   onTogglePin: (id: string) => void;
@@ -26,6 +27,9 @@ interface NoteListProps {
   allTags: TagInfo[];
   selectedTag: string | null;
   setSelectedTag: (tag: string | null) => void;
+  isUnlocked: boolean;
+  hasPrivateNotes: boolean;
+  onLock: () => void;
 }
 
 export function NoteList({
@@ -33,7 +37,7 @@ export function NoteList({
   searchQuery,
   setSearchQuery,
   activeNoteId,
-  setActiveNoteId,
+  tryOpenNote,
   onCreateNote,
   onDeleteNote,
   onTogglePin,
@@ -41,8 +45,12 @@ export function NoteList({
   allTags,
   selectedTag,
   setSelectedTag,
+  isUnlocked,
+  hasPrivateNotes,
+  onLock,
 }: NoteListProps) {
   const tagScrollRef = useRef<HTMLDivElement>(null);
+  const pinActive = isPinEnabled();
 
   return (
     <div className="flex flex-col h-full bg-sidebar border-r border-border">
@@ -55,6 +63,18 @@ export function NoteList({
             <span className="font-semibold tracking-tight">Lumen</span>
           </div>
           <div className="flex items-center gap-1">
+            {pinActive && hasPrivateNotes && (
+              <Button
+                variant="ghost"
+                size="icon"
+                onClick={onLock}
+                title={isUnlocked ? "Bloquear notas privadas" : "Bloqueado"}
+                className={`h-8 w-8 transition-colors ${isUnlocked ? "text-muted-foreground hover:text-primary" : "text-primary"}`}
+                data-testid="button-lock"
+              >
+                {isUnlocked ? <LockOpen className="h-4 w-4" /> : <Lock className="h-4 w-4" />}
+              </Button>
+            )}
             <Button
               variant="ghost"
               size="icon"
@@ -124,7 +144,7 @@ export function NoteList({
                 data-testid={`tag-filter-${tag}`}
               >
                 {tag}
-                <span className={`text-[10px] opacity-70`}>{count}</span>
+                <span className="text-[10px] opacity-70">{count}</span>
               </button>
             ))}
           </div>
@@ -164,92 +184,103 @@ export function NoteList({
         ) : (
           <AnimatePresence>
             <div className="space-y-1">
-              {notes.map((note) => (
-                <motion.div
-                  key={note.id}
-                  layout
-                  initial={{ opacity: 0, y: 8 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  exit={{ opacity: 0, scale: 0.97 }}
-                  transition={{ duration: 0.15 }}
-                >
-                  <div
-                    onClick={() => setActiveNoteId(note.id)}
-                    className={`
-                      group flex flex-col gap-1 p-3 rounded-lg cursor-pointer transition-colors relative overflow-hidden
-                      ${activeNoteId === note.id ? "bg-accent/10 text-accent" : "hover:bg-accent/5"}
-                    `}
-                    data-testid={`note-item-${note.id}`}
+              {notes.map((note) => {
+                const isLocked = note.private && pinActive && !isUnlocked;
+                const isActive = activeNoteId === note.id;
+
+                return (
+                  <motion.div
+                    key={note.id}
+                    layout
+                    initial={{ opacity: 0, y: 8 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    exit={{ opacity: 0, scale: 0.97 }}
+                    transition={{ duration: 0.15 }}
                   >
-                    {activeNoteId === note.id && (
-                      <motion.div
-                        layoutId="active-indicator"
-                        className="absolute left-0 top-2 bottom-2 w-1 bg-accent rounded-r-full"
-                      />
-                    )}
-                    <div className="flex items-start justify-between gap-2">
-                      <h3 className="font-medium text-sm truncate flex-1">
-                        {note.title || "Sin título"}
-                      </h3>
-                      <div className="flex items-center opacity-0 group-hover:opacity-100 transition-opacity">
-                        <button
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            onTogglePin(note.id);
-                          }}
-                          className="p-1 hover:text-primary transition-colors"
-                          data-testid={`button-pin-${note.id}`}
-                        >
-                          <Pin
-                            className={`h-3 w-3 ${note.pinned ? "fill-primary text-primary" : "text-muted-foreground"}`}
-                          />
-                        </button>
-                        <button
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            onDeleteNote(note.id);
-                          }}
-                          className="p-1 hover:text-destructive transition-colors text-muted-foreground"
-                          data-testid={`button-delete-${note.id}`}
-                        >
-                          <Trash2 className="h-3 w-3" />
-                        </button>
-                      </div>
-                    </div>
-                    <p className="text-xs text-muted-foreground line-clamp-2">
-                      {note.content || "Sin contenido"}
-                    </p>
-                    {note.tags && note.tags.length > 0 && (
-                      <div className="flex flex-wrap gap-1 mt-0.5">
-                        {note.tags.slice(0, 3).map((tag) => (
-                          <span
-                            key={tag}
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              setSelectedTag(tag === selectedTag ? null : tag);
-                            }}
-                            className={`inline-block px-1.5 py-0.5 rounded text-[10px] font-medium transition-colors cursor-pointer ${
-                              tag === selectedTag
-                                ? "bg-primary/20 text-primary"
-                                : "bg-muted text-muted-foreground hover:bg-primary/10 hover:text-primary"
-                            }`}
+                    <div
+                      onClick={() => tryOpenNote(note.id)}
+                      className={`
+                        group flex flex-col gap-1 p-3 rounded-lg cursor-pointer transition-colors relative overflow-hidden
+                        ${isActive ? "bg-accent/10 text-accent" : "hover:bg-accent/5"}
+                      `}
+                      data-testid={`note-item-${note.id}`}
+                    >
+                      {isActive && (
+                        <motion.div
+                          layoutId="active-indicator"
+                          className="absolute left-0 top-2 bottom-2 w-1 bg-accent rounded-r-full"
+                        />
+                      )}
+
+                      <div className="flex items-start justify-between gap-2">
+                        <h3 className="font-medium text-sm truncate flex-1 flex items-center gap-1.5">
+                          {note.private && (
+                            <Lock className={`h-3 w-3 flex-shrink-0 ${isLocked ? "text-primary" : "text-muted-foreground/60"}`} />
+                          )}
+                          {note.title || "Sin título"}
+                        </h3>
+                        <div className="flex items-center opacity-0 group-hover:opacity-100 transition-opacity">
+                          <button
+                            onClick={(e) => { e.stopPropagation(); onTogglePin(note.id); }}
+                            className="p-1 hover:text-primary transition-colors"
+                            data-testid={`button-pin-${note.id}`}
                           >
-                            {tag}
-                          </span>
-                        ))}
-                        {note.tags.length > 3 && (
-                          <span className="inline-block px-1.5 py-0.5 rounded text-[10px] text-muted-foreground">
-                            +{note.tags.length - 3}
-                          </span>
+                            <Pin className={`h-3 w-3 ${note.pinned ? "fill-primary text-primary" : "text-muted-foreground"}`} />
+                          </button>
+                          <button
+                            onClick={(e) => { e.stopPropagation(); onDeleteNote(note.id); }}
+                            className="p-1 hover:text-destructive transition-colors text-muted-foreground"
+                            data-testid={`button-delete-${note.id}`}
+                          >
+                            <Trash2 className="h-3 w-3" />
+                          </button>
+                        </div>
+                      </div>
+
+                      <div className="relative">
+                        <p className={`text-xs text-muted-foreground line-clamp-2 transition-all ${isLocked ? "blur-sm select-none pointer-events-none" : ""}`}>
+                          {note.content || "Sin contenido"}
+                        </p>
+                        {isLocked && (
+                          <div className="absolute inset-0 flex items-center justify-center">
+                            <span className="text-[10px] text-primary/60 font-medium flex items-center gap-1">
+                              <Lock className="h-3 w-3" />
+                              Bloqueada
+                            </span>
+                          </div>
                         )}
                       </div>
-                    )}
-                    <span className="text-[10px] text-muted-foreground/60 mt-0.5">
-                      {formatDistanceToNow(note.updatedAt, { addSuffix: true, locale: es })}
-                    </span>
-                  </div>
-                </motion.div>
-              ))}
+
+                      {note.tags && note.tags.length > 0 && (
+                        <div className="flex flex-wrap gap-1 mt-0.5">
+                          {note.tags.slice(0, 3).map((tag) => (
+                            <span
+                              key={tag}
+                              onClick={(e) => { e.stopPropagation(); setSelectedTag(tag === selectedTag ? null : tag); }}
+                              className={`inline-block px-1.5 py-0.5 rounded text-[10px] font-medium transition-colors cursor-pointer ${
+                                tag === selectedTag
+                                  ? "bg-primary/20 text-primary"
+                                  : "bg-muted text-muted-foreground hover:bg-primary/10 hover:text-primary"
+                              }`}
+                            >
+                              {tag}
+                            </span>
+                          ))}
+                          {note.tags.length > 3 && (
+                            <span className="inline-block px-1.5 py-0.5 rounded text-[10px] text-muted-foreground">
+                              +{note.tags.length - 3}
+                            </span>
+                          )}
+                        </div>
+                      )}
+
+                      <span className="text-[10px] text-muted-foreground/60 mt-0.5">
+                        {formatDistanceToNow(note.updatedAt, { addSuffix: true, locale: es })}
+                      </span>
+                    </div>
+                  </motion.div>
+                );
+              })}
             </div>
           </AnimatePresence>
         )}

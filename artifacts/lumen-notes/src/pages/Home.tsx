@@ -5,6 +5,7 @@ import { NoteEditor } from "@/components/NoteEditor";
 import { KeyboardShortcuts } from "@/components/KeyboardShortcuts";
 import { SettingsPanel } from "@/components/Settings";
 import { InstallPrompt } from "@/components/InstallPrompt";
+import { PinModal } from "@/components/PinModal";
 
 export default function Home() {
   const {
@@ -19,11 +20,21 @@ export default function Home() {
     updateNote,
     deleteNote,
     togglePin,
+    togglePrivate,
     deleteAllNotes,
     importNotes,
     allTags,
     selectedTag,
     setSelectedTag,
+    isUnlocked,
+    pendingNoteId,
+    setPendingNoteId,
+    tryOpenNote,
+    unlockWithPin,
+    lock,
+    hasPrivateNotes,
+    onPinEnabled,
+    onPinDisabled,
   } = useNotes();
 
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
@@ -37,6 +48,8 @@ export default function Home() {
 
   useEffect(() => {
     const handleGlobalKeyDown = (e: KeyboardEvent) => {
+      const inInput = e.target instanceof HTMLInputElement || e.target instanceof HTMLTextAreaElement;
+
       if (e.ctrlKey || e.metaKey) {
         if (e.key === "n") {
           e.preventDefault();
@@ -48,14 +61,13 @@ export default function Home() {
         } else if (e.key === ",") {
           e.preventDefault();
           setIsSettingsOpen(true);
+        } else if (e.key === "l") {
+          e.preventDefault();
+          lock();
         }
       }
 
-      if (
-        (e.key === "Delete" || e.key === "Backspace") &&
-        activeNoteId &&
-        !(e.target instanceof HTMLInputElement || e.target instanceof HTMLTextAreaElement)
-      ) {
+      if ((e.key === "Delete" || e.key === "Backspace") && activeNoteId && !inInput) {
         e.preventDefault();
         deleteNote(activeNoteId);
       }
@@ -63,9 +75,9 @@ export default function Home() {
 
     window.addEventListener("keydown", handleGlobalKeyDown);
     return () => window.removeEventListener("keydown", handleGlobalKeyDown);
-  }, [activeNoteId, handleCreateNote, deleteNote]);
+  }, [activeNoteId, handleCreateNote, deleteNote, lock]);
 
-  const showEditor = activeNoteId && isMobile;
+  const showEditor = !!activeNoteId && isMobile;
   const showList = !showEditor;
 
   return (
@@ -77,7 +89,7 @@ export default function Home() {
             searchQuery={searchQuery}
             setSearchQuery={setSearchQuery}
             activeNoteId={activeNoteId}
-            setActiveNoteId={setActiveNoteId}
+            tryOpenNote={tryOpenNote}
             onCreateNote={handleCreateNote}
             onDeleteNote={deleteNote}
             onTogglePin={togglePin}
@@ -86,6 +98,9 @@ export default function Home() {
             allTags={allTags}
             selectedTag={selectedTag}
             setSelectedTag={setSelectedTag}
+            isUnlocked={isUnlocked}
+            hasPrivateNotes={hasPrivateNotes}
+            onLock={lock}
           />
         </div>
       )}
@@ -98,6 +113,8 @@ export default function Home() {
             onBack={() => setActiveNoteId(null)}
             isMobile={isMobile}
             allTags={allTags}
+            onTogglePrivate={togglePrivate}
+            isUnlocked={isUnlocked}
           />
         </div>
       )}
@@ -114,6 +131,16 @@ export default function Home() {
         notes={notes}
         onDeleteAll={deleteAllNotes}
         onImport={importNotes}
+        onPinEnabled={onPinEnabled}
+        onPinDisabled={onPinDisabled}
+      />
+
+      <PinModal
+        isOpen={!!pendingNoteId}
+        title="Nota privada — introduce tu PIN"
+        onVerify={unlockWithPin}
+        onSuccess={() => {}}
+        onCancel={() => setPendingNoteId(null)}
       />
     </div>
   );

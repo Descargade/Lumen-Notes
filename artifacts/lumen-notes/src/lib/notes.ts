@@ -6,6 +6,7 @@ export interface Note {
   updatedAt: number;
   pinned: boolean;
   tags?: string[];
+  private?: boolean;
 }
 
 const STORAGE_KEY = "lumen_notes_v1";
